@@ -39,6 +39,217 @@
       <h1>Deployments with Git</h1>
     </section>
 
+    <section class="slide">
+      <h2>Why?</h2>
+      <ul>
+        <li>Fast deploys - only deltas transferred</li>
+        <li>Reproduceable deploys</li>
+        <li>Rollbacks</li>
+        <li>Continuous delivery workflow</li>
+      </ul>
+    </section>
+
+    <section class="slide inverted">
+      <h1>Structure</h1>
+    </section>
+
+    <section class="slide">
+      <h2>Choosing a Repository Type</h2>
+
+      <ul>
+        <li>Repository type will determine hook format</li>
+        <li>Different projects might warrant different repository types</li>
+        <li>Pros and cons for both types</li>
+      </ul>
+
+      <div class="slide">
+        <h3>Normal Repository</h3>
+        <ul>
+          <li>Working tree similar to local</li>
+          <li>Need security to protect .git (.htaccess, etc)</li>
+          <li>Don't make changes here (dirty up the tree)!</li>
+        </ul>
+      </div>
+
+      <div class="slide">
+        <h3>Bare Repository</h3>
+        <ul>
+          <li>Has no working tree</li>
+          <li>Usual suggested repository setup</li>
+          <li>Repository cloned to seperate folder</li>
+          <li>Difficult to do local configuration</li>
+        </ul>
+      <div>
+
+      <p class="slide">
+        We'll be working with a normal repository from here on out!
+      </p>
+    </section>
+
+    <section class="slide">
+      <h2>Post-receive hook</h2>
+      <ul>
+        <li>Run after all refs are updated</li>
+        <li>Resets working directory</li>
+        <li>Sets up PATH</li>
+        <li>Checks out latest code into the working copy</li>
+        <li>Initializes submodules</li>
+        <li>Runs callbacks</li>
+      </ul>
+    </section>
+
+    <section class="slide">
+      <h2>Callbacks</h2>
+
+      <ul>
+        <li>Scripts run at various stages during the deploy process</li>
+        <li>Kept in version control</li>
+      </ul>
+
+      <h3>deploy/setup</h3>
+      <ul>
+        <li>Setup folders (tmp/, log/, etc)</li>
+      </ul>
+
+      <h3>deploy/after_push</h3>
+      <ul>
+        <li>Update submodules</li>
+        <li>Install dependencies</li>
+        <li>Restart servers, etc</li>
+      </ul>
+    </section>
+
+    <section class="slide inverted">
+      <h1>Setup</h1>
+    </section>
+
+    <section class="slide">
+      <h2>Password-less SSH Authentication</h2>
+
+      <div class="slide">
+        <h3>Generating SSH Keys</h3>
+        <pre><code data-language="shell">
+          |ssh-keygen -t rsa
+          |# Creates two files - .ssh/id_rsa and .ssh/id_rsa.pub by default
+        </code></pre>
+      </div>
+
+      <div class="slide">
+        <h3>Installing SSH Keys</h3>
+        <pre><code data-language="shell">
+          |ssh remote-server
+          |mkdir .ssh
+          |chmod u=rwx,go= .ssh
+          |touch .ssh/authorized_keys
+          |chmod u=rw,go= .ssh/authorized_keys
+          |# Open .ssh/authorized_keys and copy contents of your .ssh/id_rsa.pub into it
+        </code></pre>
+
+        <p>or use ssh-copy-id if your platform supports it</p>
+      </div>
+
+      <p class="slide">
+        <strong>PROTIP:</strong>
+        Can't connect without a password?
+        Check .ssh folder and file permissions!
+      </p>
+    </section>
+
+    <section class="slide">
+      <h2>Git repository (remote)</h2>
+
+      <div class="slide">
+        <h3>Create remote repository</h3>
+        <pre><code data-language="shell">
+          |mkdir docroot
+          |cd docroot
+          |git init .
+        </code></pre>
+      </div>
+
+      <div class="slide">
+        <h3>Allow other branches to be pushed</h3>
+        <pre><code data-language="shell">
+          |git config receive.denyCurrentBranch ignore
+        </code></pre>
+      </div>
+
+      <div class="slide">
+        <h3>Add post-receive hook</h3>
+        <pre><code data-language="shell">
+          |# Transfer post-receive.sh to .git/hooks/post-receive
+          |chmod +x .git/hooks/post-receive
+        </code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>Git repository (local)</h2>
+
+      <div class="slide">
+        <h3>Add deploy/after_push callback</h3>
+        <pre><code data-language="shell">
+          |mkdir deploy
+          |# Copy after_push.sh to deploy/after_push
+          |git add deploy
+          |git commit
+        </code></pre>
+      </div>
+
+      <div class="slide">
+        <h3>Add remote</h3>
+
+        <pre><code data-language="shell">
+          |git remote add production "user@domain.com:/full/path/to-repo"
+        </code></pre>
+      </div>
+    </section>
+
+    <section class="slide inverted">
+      <h1>Deploying</h1>
+    </section>
+
+    <section class="slide">
+      <h2>Everyday stuff</h2>
+      <div class="slide">
+        <h3>Push master</h3>
+
+        <pre><code data-language="shell">
+          |git push production master
+        </code></pre>
+      </div>
+
+      <div class="slide">
+        <h3>Push different branch</h3>
+
+        <pre><code data-language="shell">
+          |git push production your-branch:master
+        </code></pre>
+      </div>
+
+      <div class="slide">
+        <h3>Rollbacks</h3>
+
+        <pre><code data-language="shell">
+          |git push production HEAD~1:master
+        </code></pre>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>More Information</h2>
+
+      <ul>
+        <li>
+          <a href="https://raw.githubusercontent.com/git/git/master/contrib/subtree/git-subtree.txt" target="_new">git-subtree</a>
+        </li>
+
+        <li>
+          <a href="https://github.com/mislav/git-deploy">mislav/git-deploy</a>
+        </li>
+      </dl>
+    </section>
+
     <section class="slide inverted">
       <h1>Demo</h1>
     </section>

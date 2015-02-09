@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Adapted from https://raw.githubusercontent.com/mislav/git-deploy/master/lib/hooks/post-receive.sh
+set -e
+
+if [ "$GIT_DIR" = "." ]; then
+  # The script has been called as a hook; chdir to the working copy
+  cd ..
+  unset GIT_DIR
+fi
+
+# try to obtain the usual system PATH
+if [ -f /etc/profile ]; then
+  PATH=$(source /etc/profile; echo $PATH)
+  export PATH
+fi
+
+# get the current branch
+head="$(git symbolic-ref HEAD)"
+
+# read the STDIN to detect if this push changed the current branch
+while read oldrev newrev refname
+do
+  [ "$refname" = "$head" ] && break
+done
+
+# abort if there's no update, or in case the branch is deleted
+if [ -z "${newrev//0}" ]; then
+  exit
+fi
+
+# check out the latest code into the working copy
+umask 002
+git reset --hard
+
+if [ -z "${oldrev//0}" ]; then
+  # this is the first push; this branch was just created
+
+  # init submodules
+  git submodule update --recursive --init 2>&1
+
+  # execute the one-time setup hook
+  [ -x deploy/setup ] && deploy/setup $oldrev $newrev 2>&1
+else
+  # execute the main deploy hook
+  [ -x deploy/after_push ] && deploy/after_push $oldrev $newrev 2>&1
+fi
